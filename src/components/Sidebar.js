@@ -129,12 +129,12 @@ export default function Sidebar() {
     return (
         <aside className="w-64 bg-gray-100 border-r h-screen overflow-y-auto p-4">
 
-            {/* Botão para voltar à Home */}
-            <button
-                onClick={goHome}
-                className="text-xl font-bold mb-4 flex items-center gap-2 hover:opacity-80 transition"
+            {/* Link para voltar à Home */}
+            {/* <a className="text-xl font-bold mb-4 flex items-center gap-2"
                 title="Voltar à página inicial"
-            >
+            > */}
+
+            <a href="/" className="text-xl font-bold mb-4 flex gap-2">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -143,8 +143,8 @@ export default function Sidebar() {
                 >
                     <path d="M6 2a2 2 0 00-2 2v16c0 .55.45 1 1 1s1-.45 1-1V4h12v16c0 .55.45 1 1 1s1-.45 1-1V4a2 2 0 00-2-2H6zm3 4v2h6V6H9zm0 4v2h6v-2H9z" />
                 </svg>
-                Livros
-            </button>
+                Bíblia Sagrada
+            </a>
 
             <nav>
                 <ul className="space-y-2">

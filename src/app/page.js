@@ -234,7 +234,7 @@ export default function Home() {
           {/* Cabeçalho grande no fluxo (sempre visível no topo do conteúdo) */}
           {!selectedBook && (
             <div>
-              <h1 className="text-3xl font-bold mb-4">Leitor da Bíblia</h1>
+              <h1 className="text-3xl font-bold mb-4">Bíblia Sagrada</h1>
               <p className="text-gray-700">Selecione um livro no menu à esquerda para começar.</p>
             </div>
           )}
