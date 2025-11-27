@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import booksRaw from "../data/bible.json";
 import { useBible } from "../context/BibleContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 
 /**
  * Sidebar organizado em ordem canônica + botão Livros que volta à Home.
@@ -144,7 +146,7 @@ export default function Sidebar() {
                     <path d="M6 2a2 2 0 00-2 2v16c0 .55.45 1 1 1s1-.45 1-1V4h12v16c0 .55.45 1 1 1s1-.45 1-1V4a2 2 0 00-2-2H6zm3 4v2h6V6H9zm0 4v2h6v-2H9z" />
                 </svg>
                 Bíblia Sagrada
-                
+
             </a>
 
             <nav>
