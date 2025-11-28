@@ -172,7 +172,7 @@ export default function Home() {
       </div>
       {/* ========== BOTÃO HAMBURGER (MOBILE) ========== */}
       {!showBox && (
-        <div className="md:hidden p-3 absolute top-2 left-2 z-50">
+        <div className="md:hidden ml-2 p-0 absolute top-2 left-2 z-50">
           <button
             onClick={() => setMobileSidebarOpen(true)}
             className="p-2 rounded border bg-white shadow-md"
@@ -202,7 +202,7 @@ export default function Home() {
             <div className="p-3 border-b">
               <button
                 onClick={() => setMobileSidebarOpen(false)}
-                className="px-3 py-1 border rounded bg-white"
+                className="ml-20 px-3 py-1 border rounded bg-white"
               >
                 Fechar
               </button>
