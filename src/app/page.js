@@ -408,7 +408,7 @@ export default function Home() {
                   <div className="min-w-0">
                     <div className="text-sm font-semibold truncate">
                       {selectedBook
-                        ? `${selectedBook.name} | Capítulo ${selectedChapter}`
+                        ? `${selectedBook.name} | Capítulo ${selectedChapter}:${selectedVerse}`
                         : "Leitor da Bíblia"}
                     </div>
 
@@ -439,14 +439,14 @@ export default function Home() {
                       onClick={gotoPrev}
                       className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
                     >
-                      ←
+                      ← Anterior
                     </button>
 
                     <button
                       onClick={gotoNext}
                       className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
                     >
-                      →
+                      Próximo →
                     </button>
 
                     <button
@@ -513,7 +513,7 @@ export default function Home() {
                   <div className="truncate">
                     <div className="text-sm font-semibold truncate">
                       {selectedBook
-                        ? `${selectedBook.name} | Capítulo ${selectedChapter}`
+                        ? `${selectedBook.name} | Capítulo ${selectedChapter}:${selectedVerse}`
                         : "Leitor da Bíblia"}
                     </div>
 
@@ -543,69 +543,77 @@ export default function Home() {
                 </div>
 
                 {/* navegação mobile */}
-                <div className="flex items-center justify-between gap-2 mb-2">
 
-                  <div className="flex gap-2">
+                <div className="flex flex-col items-center">
+                  <p className="text-center">Versículo</p>
+
+                  <div className="flex gap-2 mt-2">
                     <button
                       onClick={gotoPrev}
-                      className="px-2 py-1 border rounded text-xs bg-white"
+                      className="px-3 py-1 border rounded hover:bg-white"
                     >
-                      ←
+                      ← Anterior
                     </button>
 
                     <button
                       onClick={gotoNext}
-                      className="px-3 py-1 border rounded text-xs bg-white"
+                      className="px-3 py-1 border rounded hover:bg-white"
                     >
-                      →
-                    </button>
-
-                    <button
-                      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                      className="px-2 py-1 border rounded text-xs bg-white"
-                    >
-                      ↑ topo
+                      Próximo →
                     </button>
                   </div>
 
+                </div>
+
+                <div className="flex flex-col items-center m-2 gap-2">
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    className="px-3 py-1 border rounded hover:bg-white"
+                  >
+                    ↑ topo
+                  </button>
 
                 </div>
 
-                {/* busca mobile (versão compacta) */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Buscar..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="w-full px-3 py-2 border rounded text-sm"
-                  />
 
-                  <select
-                    value={searchScope}
-                    onChange={(e) => setSearchScope(e.target.value)}
-                    className="px-3 py-2 border rounded bg-white"
-                  >
-                    <option value="chapter">Capítulo</option>
-                    <option value="book">Livro</option>
-                    <option value="bible">Bíblia</option>
-                  </select>
-                  <button
-                    onClick={handleSearchApply}
-                    className="px-3 py-2 border rounded bg-white"
-                  >
-                    Pesquisar
-                  </button>
-                  <button
-                    onClick={handleClear}
-                    className="px-3 py-2 border rounded bg-white"
-                  >
-                    Limpar
-                  </button>
-                </div>
               </div>
+
+              {/* busca mobile (versão compacta) */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full px-3 py-2 border rounded text-sm"
+                />
+                <div className="flex gap-2"></div>
+                <select
+                  value={searchScope}
+                  onChange={(e) => setSearchScope(e.target.value)}
+                  className="px-3 py-2 border rounded bg-white"
+                >
+                  <option value="chapter">Capítulo</option>
+                  <option value="book">Livro</option>
+                  <option value="bible">Bíblia</option>
+                </select>
+                <button
+                  onClick={handleSearchApply}
+                  className="px-3 py-2 border rounded bg-white"
+                >
+                  Pesquisar
+                </button>
+                <button
+                  onClick={handleClear}
+                  className="px-3 py-2 border rounded bg-white"
+                >
+                  Limpar
+                </button>
+              </div>
+
             </div>
+
           </>
         )}
 
@@ -623,7 +631,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {selectedBook.name} < br />Capítulo {selectedChapter}
+                    {selectedBook.name} < br />Capítulo {selectedChapter}:{selectedVerse}
                   </h2>
 
                 </div>
@@ -739,6 +747,6 @@ export default function Home() {
           )}
         </div>
       </main>
-    </div>
+    </div >
   );
 }
