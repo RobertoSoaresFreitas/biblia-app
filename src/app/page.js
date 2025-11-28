@@ -54,6 +54,31 @@ export default function Home() {
     setSelectedVerse(1);
   }, [selectedBook, selectedChapter]);
 
+  // === NOVO: scroll automático para o verso ativo ===
+  useEffect(() => {
+    if (!selectedBook || !selectedChapter) return;
+
+    const id = `verse-${selectedChapter}-${selectedVerse}`;
+
+    // tenta encontrar o elemento imediatamente; se não existir, aguarda o próximo frame
+    const scrollToElement = () => {
+      const el = document.getElementById(id);
+      if (el) {
+        // usar block: 'center' para centralizar o verso na viewport
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    };
+
+    // primeiro passo: tentar agora
+    scrollToElement();
+
+    // caso o DOM ainda não tenha sido atualizado (ex.: mudança de capítulo), tentar no next frame
+    requestAnimationFrame(() => {
+      scrollToElement();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBook, selectedChapter, selectedVerse]);
+
   // bloqueia scroll do body quando drawer mobile aberto (opcional)
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -407,7 +432,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Navegação */} 
+                {/* Navegação */}
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -665,13 +690,14 @@ export default function Home() {
                       const isActive = verseNumber === selectedVerse;
                       return (
                         <li
+                          id={`verse-${selectedChapter}-${verseNumber}`}
                           key={i}
                           className={`leading-relaxed cursor-pointer ${isActive ? "bg-gray-100 rounded p-2" : ""}`}
                           onClick={() => setSelectedVerse(verseNumber)}
                         >
                           <span className="font-semibold mr-2">{verseNumber}.</span>
-                          {/* aplica font-size 1.3em quando ativo */}
-                          <span style={isActive ? { fontSize: "1.3em" } : undefined}>{v}</span>
+                          {/* aplica font-size 1.4em quando ativo */}
+                          <span style={isActive ? { fontSize: "1.4em" } : undefined}>{v}</span>
                         </li>
                       );
                     })}
@@ -683,6 +709,7 @@ export default function Home() {
                       const isActive = item.c === selectedChapter && verseNumber === selectedVerse;
                       return (
                         <li
+                          id={`verse-${item.c}-${verseNumber}`}
                           key={idx}
                           className={`leading-relaxed cursor-pointer ${isActive ? "bg-gray-100 rounded p-2" : ""}`}
                           onClick={() => {
@@ -699,7 +726,7 @@ export default function Home() {
                               ? `${verseNumber}.`
                               : `${item.book} ${item.c}:${verseNumber}`}
                           </span>
-                          <span style={isActive ? { fontSize: "1.3em" } : undefined}>
+                          <span style={isActive ? { fontSize: "1.4em" } : undefined}>
                             {highlight(item.v, appliedSearch)}
                           </span>
                         </li>
