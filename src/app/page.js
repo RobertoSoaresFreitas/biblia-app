@@ -8,18 +8,43 @@ import books from "../data/bible.json";
 export default function Home() {
   const { selectedBook, selectedChapter, selectChapter } = useBible();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(""); // valor do input
+  const [appliedSearch, setAppliedSearch] = useState(""); // busca aplicada (quando clicar Pesquisar)
   const [searchScope, setSearchScope] = useState("chapter");
 
   // RESPONSIVIDADE ------------------------
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // novo: versículo selecionado no capítulo (1-based)
+  const [selectedVerse, setSelectedVerse] = useState(1);
+
   // fecha automaticamente o drawer depois que o usuário seleciona capítulo
   useEffect(() => {
     if (selectedBook && selectedChapter) {
       setMobileSidebarOpen(false);
+      // sempre que mudamos de capítulo via contexto, resetamos ou ajustamos o versículo
+      // se já existir um selectedVerse, garantimos que esteja dentro do limite do novo capítulo
+      const max = selectedBook?.chapters?.[selectedChapter - 1]?.length || 0;
+      if (selectedVerse > max) {
+        setSelectedVerse(max > 0 ? max : 1);
+      } else if (selectedVerse < 1) {
+        setSelectedVerse(1);
+      } else {
+        // mantemos o selectedVerse (útil quando navegando entre capítulos pelo botão que define verso específico)
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook, selectedChapter]);
+
+  // bloqueia scroll do body quando drawer mobile aberto (opcional)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = mobileSidebarOpen ? "hidden" : previous || "";
+    return () => {
+      document.body.style.overflow = previous || "";
+    };
+  }, [mobileSidebarOpen]);
 
   // box fixo (desktop)
   const [scrolled, setScrolled] = useState(false);
@@ -100,22 +125,105 @@ export default function Home() {
     );
   }
 
-  const nSearch = normalize(search);
+  // use appliedSearch (definida ao clicar Pesquisar) para filtrar
+  const nSearch = normalize(appliedSearch);
   const filteredVerses = nSearch
     ? versesToSearch.filter((item) => normalize(item.v).includes(nSearch))
     : versesToSearch;
 
-  function gotoChapter(cap) {
+  // ações de busca
+  function handleSearchApply() {
+    setAppliedSearch(search.trim());
+    // rolar para mostrar resultados se quiser:
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 140, behavior: "smooth" });
+    }
+  }
+
+  function handleClear() {
+    setSearch("");
+    setAppliedSearch("");
+    setSearchScope("chapter"); // <<< correção: resetar para capítulo
+  }
+
+  // permite Enter para buscar
+  function handleKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearchApply();
+    }
+  }
+
+  function gotoChapter(cap, verse = 1) {
     if (!selectedBook) return;
     const max = selectedBook.chapters.length;
     if (cap < 1 || cap > max) return;
 
     selectChapter(selectedBook, cap);
 
+    // atualiza selectedVerse localmente (será ajustado pelo useEffect que escuta selectedChapter)
+    setSelectedVerse(verse);
+
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 140, behavior: "smooth" });
     }
   }
+
+  // Nova função: ir para um verso específico (mantém compatibilidade)
+  function gotoVerse(cap, verse) {
+    gotoChapter(cap, verse);
+  }
+
+  // Funções de navegação com travessia entre capítulos quando necessário
+  function gotoNext() {
+    if (!selectedBook || !selectedChapter) return;
+    const currentChapterIndex = selectedChapter - 1;
+    const chapterVerses = selectedBook.chapters?.[currentChapterIndex] || [];
+    const lastVerseIndex = chapterVerses.length; // versículos são 1-based
+
+    if (selectedVerse < lastVerseIndex) {
+      // simplesmente avança o versículo
+      setSelectedVerse((v) => v + 1);
+      // opcional: rolar para topo do verso/visualização se desejar
+    } else {
+      // estamos no último verso do capítulo: tenta avançar para o próximo capítulo (versículo 1)
+      const nextChapter = selectedChapter + 1;
+      if (nextChapter <= (selectedBook.chapters?.length || 0)) {
+        gotoChapter(nextChapter, 1);
+      } else {
+        // estamos no último capítulo: não faz nada (mantém comportamento de não atravessar o livro)
+      }
+    }
+  }
+
+  function gotoPrev() {
+    if (!selectedBook || !selectedChapter) return;
+    const currentChapterIndex = selectedChapter - 1;
+    const chapterVerses = selectedBook.chapters?.[currentChapterIndex] || [];
+
+    if (selectedVerse > 1) {
+      // simplesmente retrocede o versículo
+      setSelectedVerse((v) => v - 1);
+    } else {
+      // estamos no primeiro verso do capítulo: tenta ir para o capítulo anterior no último verso
+      const prevChapter = selectedChapter - 1;
+      if (prevChapter >= 1) {
+        const prevChapterVerses = selectedBook.chapters?.[prevChapter - 1] || [];
+        const lastVerseOfPrev = prevChapterVerses.length || 1;
+        gotoChapter(prevChapter, lastVerseOfPrev);
+      } else {
+        // estamos no primeiro capítulo: não faz nada (mantém comportamento)
+      }
+    }
+  }
+
+  // quando usuário seleciona manualmente capítulo via Sidebar, resetamos selectedVerse para 1
+  // (isso garante comportamento natural)
+  useEffect(() => {
+    if (selectedBook && selectedChapter) {
+      setSelectedVerse(1);
+    }
+  }, [selectedBook, selectedChapter]);
 
   const showBox = pinned || (scrolled && !closed);
 
@@ -154,14 +262,14 @@ export default function Home() {
           {/* Botões Navegação ← → */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => gotoChapter((selectedChapter || 1) - 1)}
+              onClick={gotoPrev}
               className="px-3 py-1 border rounded bg-white shadow-sm"
             >
               ←
             </button>
 
             <button
-              onClick={() => gotoChapter((selectedChapter || 1) + 1)}
+              onClick={gotoNext}
               className="px-3 py-1 border rounded bg-white shadow-sm"
             >
               →
@@ -170,6 +278,7 @@ export default function Home() {
         </div>
 
       </div>
+
       {/* ========== BOTÃO HAMBURGER (MOBILE) ========== */}
       {!showBox && (
         <div className="md:hidden ml-2 p-0 absolute top-2 left-2 z-50">
@@ -196,7 +305,7 @@ export default function Home() {
           />
 
           {/* Painel lateral */}
-          <div className="absolute left-0 top-0 bottom-0 w-72 max-w-full bg-white shadow-xl overflow-y-auto">
+          <div className="fixed left-0 top-0 bottom-0 w-72 max-w-full bg-white shadow-xl overflow-y-auto h-full">
 
             {/* Botão fechar */}
             <div className="p-3 border-b">
@@ -261,14 +370,14 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => gotoChapter((selectedChapter || 1) - 1)}
+                      onClick={gotoPrev}
                       className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
                     >
                       ←
                     </button>
 
                     <button
-                      onClick={() => gotoChapter((selectedChapter || 1) + 1)}
+                      onClick={gotoNext}
                       className="px-2 py-1 border rounded text-sm bg-white hover:bg-gray-50"
                     >
                       →
@@ -300,14 +409,29 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* Busca */}
-                <input
-                  type="text"
-                  placeholder="Pesquisar (ignora acentos)..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
-                />
+                {/* Busca (desktop fixed box) */}
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Pesquisar (ignora acentos)..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
+                  />
+                  <button
+                    onClick={handleSearchApply}
+                    className="px-3 py-2 border rounded bg-white hover:bg-gray-50"
+                  >
+                    Pesquisar
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="px-3 py-2 border rounded bg-white hover:bg-gray-50"
+                  >
+                    Limpar
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -354,15 +478,15 @@ export default function Home() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => gotoChapter((selectedChapter || 1) - 1)}
+                      onClick={gotoPrev}
                       className="px-2 py-1 border rounded text-xs bg-white"
                     >
                       ←
                     </button>
 
                     <button
-                      onClick={() => gotoChapter((selectedChapter || 1) + 1)}
-                      className="px-2 py-1 border rounded text-xs bg-white"
+                      onClick={gotoNext}
+                      className="px-3 py-1 border rounded text-xs bg-white"
                     >
                       →
                     </button>
@@ -386,14 +510,29 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* busca mobile */}
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-3 py-2 border rounded text-sm"
-                />
+                {/* busca mobile (versão compacta) */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full px-3 py-2 border rounded text-sm"
+                  />
+                  <button
+                    onClick={handleSearchApply}
+                    className="px-3 py-2 border rounded bg-white"
+                  >
+                    Pesquisar
+                  </button>
+                  <button
+                    onClick={handleClear}
+                    className="px-3 py-2 border rounded bg-white"
+                  >
+                    Limpar
+                  </button>
+                </div>
               </div>
             </div>
           </>
@@ -422,14 +561,14 @@ export default function Home() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => gotoChapter(selectedChapter - 1)}
+                    onClick={gotoPrev}
                     className="px-3 py-1 border rounded hover:bg-white"
                   >
                     ← Anterior
                   </button>
 
                   <button
-                    onClick={() => gotoChapter(selectedChapter + 1)}
+                    onClick={gotoNext}
                     className="px-3 py-1 border rounded hover:bg-white"
                   >
                     Próximo →
@@ -437,28 +576,82 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* aqui também coloquei uma barra de busca dentro do fluxo do conteúdo
+                  para que a busca fique disponível no desktop mesmo quando showBox === false */}
+              <div className="mb-4 flex gap-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Pesquisar (ignora acentos)..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
+                />
+
+                {/* <-- SELETOR DE ESCOPO ADICIONADO AQUI PARA DESKTOP */}
+                <select
+                  value={searchScope}
+                  onChange={(e) => setSearchScope(e.target.value)}
+                  className="px-2 py-2 border rounded text-sm bg-white"
+                >
+                  <option value="chapter">Capítulo</option>
+                  <option value="book">Livro</option>
+                  <option value="bible">Bíblia</option>
+                </select>
+
+                <button onClick={handleSearchApply} className="px-3 py-2 border rounded bg-white">
+                  Pesquisar
+                </button>
+                <button onClick={handleClear} className="px-3 py-2 border rounded bg-white">
+                  Limpar
+                </button>
+              </div>
+
               <div className="bg-white border rounded p-4 shadow-sm">
                 {filteredVerses.length === 0 ? (
                   <ul className="space-y-3 text-gray-800">
-                    {verses.map((v, i) => (
-                      <li key={i} className="leading-relaxed">
-                        <span className="font-semibold mr-2">{i + 1}.</span>
-                        <span>{v}</span>
-                      </li>
-                    ))}
+                    {verses.map((v, i) => {
+                      const verseNumber = i + 1;
+                      const isActive = verseNumber === selectedVerse;
+                      return (
+                        <li
+                          key={i}
+                          className={`leading-relaxed cursor-pointer ${isActive ? "bg-gray-100 rounded p-2" : ""}`}
+                          onClick={() => setSelectedVerse(verseNumber)}
+                        >
+                          <span className="font-semibold mr-2">{verseNumber}.</span>
+                          <span>{v}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <ul className="space-y-3 text-gray-800">
-                    {filteredVerses.map((item, idx) => (
-                      <li key={idx} className="leading-relaxed">
-                        <span className="font-semibold mr-2">
-                          {searchScope === "chapter"
-                            ? `${item.i + 1}.`
-                            : `${item.book} ${item.c}:${item.i + 1}`}
-                        </span>
-                        <span>{highlight(item.v, search)}</span>
-                      </li>
-                    ))}
+                    {filteredVerses.map((item, idx) => {
+                      const verseNumber = item.i + 1;
+                      const isActive = item.c === selectedChapter && verseNumber === selectedVerse;
+                      return (
+                        <li
+                          key={idx}
+                          className={`leading-relaxed cursor-pointer ${isActive ? "bg-gray-100 rounded p-2" : ""}`}
+                          onClick={() => {
+                            // se o resultado for de outro capítulo do mesmo livro, navegamos para ele
+                            if (item.c !== selectedChapter) {
+                              gotoVerse(item.c, verseNumber);
+                            } else {
+                              setSelectedVerse(verseNumber);
+                            }
+                          }}
+                        >
+                          <span className="font-semibold mr-2">
+                            {searchScope === "chapter"
+                              ? `${verseNumber}.`
+                              : `${item.book} ${item.c}:${verseNumber}`}
+                          </span>
+                          <span>{highlight(item.v, appliedSearch)}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
