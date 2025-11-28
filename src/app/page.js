@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import { useBible } from "../context/BibleContext";
 import books from "../data/bible.json";
@@ -18,22 +18,40 @@ export default function Home() {
   // novo: versículo selecionado no capítulo (1-based)
   const [selectedVerse, setSelectedVerse] = useState(1);
 
+  // ref para suprimir reset do selectedVerse quando navegamos programaticamente para um verso específico
+  const suppressResetRef = useRef(false);
+
   // fecha automaticamente o drawer depois que o usuário seleciona capítulo
   useEffect(() => {
+    // RESPEITA navegações programáticas: não tocar selectedVerse se suprimido
+    if (suppressResetRef.current) {
+      // ainda fechamos o drawer, mas não alteramos selectedVerse aqui
+      setMobileSidebarOpen(false);
+      return;
+    }
+
     if (selectedBook && selectedChapter) {
       setMobileSidebarOpen(false);
-      // sempre que mudamos de capítulo via contexto, resetamos ou ajustamos o versículo
-      // se já existir um selectedVerse, garantimos que esteja dentro do limite do novo capítulo
+      // ajusta selectedVerse apenas se necessário (veja useEffect abaixo para reset/controle)
       const max = selectedBook?.chapters?.[selectedChapter - 1]?.length || 0;
       if (selectedVerse > max) {
         setSelectedVerse(max > 0 ? max : 1);
       } else if (selectedVerse < 1) {
         setSelectedVerse(1);
-      } else {
-        // mantemos o selectedVerse (útil quando navegando entre capítulos pelo botão que define verso específico)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBook, selectedChapter]); // mantive apenas para controle de bounds
+
+  // efeito que reseta selectedVerse a 1 quando capítulo muda, exceto se suprimido
+  useEffect(() => {
+    if (!selectedBook || !selectedChapter) return;
+    if (suppressResetRef.current) {
+      // navegação programática com verso já definido: não resetar
+      suppressResetRef.current = false;
+      return;
+    }
+    // comportamento padrão: resetar para 1 ao trocar capítulo (ex.: seleção via Sidebar)
+    setSelectedVerse(1);
   }, [selectedBook, selectedChapter]);
 
   // bloqueia scroll do body quando drawer mobile aberto (opcional)
@@ -154,14 +172,17 @@ export default function Home() {
     }
   }
 
-  function gotoChapter(cap, verse = 1) {
-    if (!selectedBook) return;
-    const max = selectedBook.chapters.length;
+  // helper: seleciona outro livro + capítulo
+  function gotoBookChapter(bookObj, cap, verse = 1) {
+    if (!bookObj) return;
+    const max = bookObj.chapters.length;
     if (cap < 1 || cap > max) return;
 
-    selectChapter(selectedBook, cap);
+    if (typeof verse === "number" && verse >= 1) {
+      suppressResetRef.current = true;
+    }
 
-    // atualiza selectedVerse localmente (será ajustado pelo useEffect que escuta selectedChapter)
+    selectChapter(bookObj, cap);
     setSelectedVerse(verse);
 
     if (typeof window !== "undefined") {
@@ -169,12 +190,18 @@ export default function Home() {
     }
   }
 
+  // gotoChapter agora usa o livro atual (compatibilidade)
+  function gotoChapter(cap, verse = 1) {
+    if (!selectedBook) return;
+    gotoBookChapter(selectedBook, cap, verse);
+  }
+
   // Nova função: ir para um verso específico (mantém compatibilidade)
   function gotoVerse(cap, verse) {
     gotoChapter(cap, verse);
   }
 
-  // Funções de navegação com travessia entre capítulos quando necessário
+  // Funções de navegação com travessia entre capítulos e livros quando necessário
   function gotoNext() {
     if (!selectedBook || !selectedChapter) return;
     const currentChapterIndex = selectedChapter - 1;
@@ -184,15 +211,27 @@ export default function Home() {
     if (selectedVerse < lastVerseIndex) {
       // simplesmente avança o versículo
       setSelectedVerse((v) => v + 1);
-      // opcional: rolar para topo do verso/visualização se desejar
+      return;
+    }
+
+    // estamos no último verso do capítulo
+    const nextChapter = selectedChapter + 1;
+    if (nextChapter <= (selectedBook.chapters?.length || 0)) {
+      // próximo capítulo no mesmo livro
+      gotoChapter(nextChapter, 1);
+      return;
+    }
+
+    // fim do livro atual: tenta ir para o próximo livro (capítulo 1, verso 1)
+    const currentBookIndex = books.findIndex(
+      (b) => (b.abbrev ?? b.name) === (selectedBook?.abbrev ?? selectedBook?.name)
+    );
+    const nextBookIndex = currentBookIndex + 1;
+    if (nextBookIndex < books.length) {
+      const nextBook = books[nextBookIndex];
+      gotoBookChapter(nextBook, 1, 1);
     } else {
-      // estamos no último verso do capítulo: tenta avançar para o próximo capítulo (versículo 1)
-      const nextChapter = selectedChapter + 1;
-      if (nextChapter <= (selectedBook.chapters?.length || 0)) {
-        gotoChapter(nextChapter, 1);
-      } else {
-        // estamos no último capítulo: não faz nada (mantém comportamento de não atravessar o livro)
-      }
+      // já no último livro da Bíblia: não faz nada
     }
   }
 
@@ -201,29 +240,37 @@ export default function Home() {
     const currentChapterIndex = selectedChapter - 1;
     const chapterVerses = selectedBook.chapters?.[currentChapterIndex] || [];
 
-    if (selectedVerse > 1) {
-      // simplesmente retrocede o versículo
+    // se há versos no capítulo e não estamos no verso 1, apenas retrocede
+    if (chapterVerses.length > 0 && selectedVerse > 1) {
       setSelectedVerse((v) => v - 1);
+      return;
+    }
+
+    // se não há versos, tentamos capítulo anterior normalmente
+    const prevChapter = selectedChapter - 1;
+    if (prevChapter >= 1) {
+      const prevChapterVerses = selectedBook.chapters?.[prevChapter - 1] || [];
+      const lastVerseOfPrev = Math.max(prevChapterVerses.length, 1);
+      gotoChapter(prevChapter, lastVerseOfPrev);
+      return;
+    }
+
+    // se chegamos aqui, estamos no primeiro capítulo do livro atual -> tentar livro anterior
+    const currentBookIndex = books.findIndex(
+      (b) => (b.abbrev ?? b.name) === (selectedBook?.abbrev ?? selectedBook?.name)
+    );
+    const prevBookIndex = currentBookIndex - 1;
+    if (prevBookIndex >= 0) {
+      const prevBook = books[prevBookIndex];
+      const lastChapterIndex = prevBook.chapters.length - 1;
+      const lastChapterNumber = lastChapterIndex + 1;
+      const lastChapterVerses = prevBook.chapters?.[lastChapterIndex] || [];
+      const lastVerseOfLastChapter = Math.max(lastChapterVerses.length, 1);
+      gotoBookChapter(prevBook, lastChapterNumber, lastVerseOfLastChapter);
     } else {
-      // estamos no primeiro verso do capítulo: tenta ir para o capítulo anterior no último verso
-      const prevChapter = selectedChapter - 1;
-      if (prevChapter >= 1) {
-        const prevChapterVerses = selectedBook.chapters?.[prevChapter - 1] || [];
-        const lastVerseOfPrev = prevChapterVerses.length || 1;
-        gotoChapter(prevChapter, lastVerseOfPrev);
-      } else {
-        // estamos no primeiro capítulo: não faz nada (mantém comportamento)
-      }
+      // já no primeiro livro: não faz nada
     }
   }
-
-  // quando usuário seleciona manualmente capítulo via Sidebar, resetamos selectedVerse para 1
-  // (isso garante comportamento natural)
-  useEffect(() => {
-    if (selectedBook && selectedChapter) {
-      setSelectedVerse(1);
-    }
-  }, [selectedBook, selectedChapter]);
 
   const showBox = pinned || (scrolled && !closed);
 
@@ -340,12 +387,6 @@ export default function Home() {
                         : "Leitor da Bíblia"}
                     </div>
 
-                    {selectedBook && (
-                      <div className="text-xs text-gray-500">
-                        {selectedBook.abbrev?.toUpperCase()} •{" "}
-                        {selectedBook.chapters.length} capítulos
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-1">
@@ -366,7 +407,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Navegação */}
+                {/* Navegação */} 
                 <div className="flex items-center justify-between mb-2 gap-2">
                   <div className="flex items-center gap-2">
                     <button
@@ -398,36 +439,39 @@ export default function Home() {
                     </button>
                   </div>
 
+
+                </div>
+
+                {/* Busca (desktop fixed box) */}
+
+                <input
+                  type="text"
+                  placeholder="Pesquisar (ignora acentos)..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full md-4 px-3 py-2 border rounded focus:outline-none focus:ring"
+                />
+                <div className="flex flex-row align-items gap-4 md-4 mt-2">
                   <select
                     value={searchScope}
                     onChange={(e) => setSearchScope(e.target.value)}
-                    className="px-2 py-1 border rounded text-sm bg-white"
+                    className="px-3 py-2 border rounded text-sm bg-white"
                   >
                     <option value="chapter">Capítulo</option>
                     <option value="book">Livro</option>
                     <option value="bible">Bíblia</option>
                   </select>
-                </div>
 
-                {/* Busca (desktop fixed box) */}
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    placeholder="Pesquisar (ignora acentos)..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
-                  />
                   <button
                     onClick={handleSearchApply}
-                    className="px-3 py-2 border rounded bg-white hover:bg-gray-50"
+                    className="px-3 py-2 border rounded text-sm bg-white hover:bg-gray-50"
                   >
                     Pesquisar
                   </button>
                   <button
                     onClick={handleClear}
-                    className="px-3 py-2 border rounded bg-white hover:bg-gray-50"
+                    className="px-3 py-2 border rounded text-sm bg-white hover:bg-gray-50"
                   >
                     Limpar
                   </button>
@@ -444,14 +488,14 @@ export default function Home() {
                   <div className="truncate">
                     <div className="text-sm font-semibold truncate">
                       {selectedBook
-                        ? `${selectedBook.name} | Cap. ${selectedChapter}`
+                        ? `${selectedBook.name} | Capítulo ${selectedChapter}`
                         : "Leitor da Bíblia"}
                     </div>
 
                     {selectedBook && (
                       <div className="text-xs text-gray-500">
                         {selectedBook.abbrev?.toUpperCase()} •{" "}
-                        {selectedBook.chapters.length} caps
+                        {selectedBook.chapters.length} Capítulos
                       </div>
                     )}
                   </div>
@@ -499,15 +543,7 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <select
-                    value={searchScope}
-                    onChange={(e) => setSearchScope(e.target.value)}
-                    className="px-2 py-1 border rounded text-xs bg-white"
-                  >
-                    <option value="chapter">Cap.</option>
-                    <option value="book">Livro</option>
-                    <option value="bible">Bíblia</option>
-                  </select>
+
                 </div>
 
                 {/* busca mobile (versão compacta) */}
@@ -520,6 +556,16 @@ export default function Home() {
                     onKeyDown={handleKeyDown}
                     className="w-full px-3 py-2 border rounded text-sm"
                   />
+
+                  <select
+                    value={searchScope}
+                    onChange={(e) => setSearchScope(e.target.value)}
+                    className="px-3 py-2 border rounded bg-white"
+                  >
+                    <option value="chapter">Capítulo</option>
+                    <option value="book">Livro</option>
+                    <option value="bible">Bíblia</option>
+                  </select>
                   <button
                     onClick={handleSearchApply}
                     className="px-3 py-2 border rounded bg-white"
@@ -552,28 +598,32 @@ export default function Home() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {selectedBook.name} — Capítulo {selectedChapter}
+                    {selectedBook.name} < br />Capítulo {selectedChapter}
                   </h2>
-                  <p className="text-sm text-gray-500">
-                    {selectedBook.abbrev?.toUpperCase()} • {selectedBook.chapters.length} capítulos
-                  </p>
+
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={gotoPrev}
-                    className="px-3 py-1 border rounded hover:bg-white"
-                  >
-                    ← Anterior
-                  </button>
 
-                  <button
-                    onClick={gotoNext}
-                    className="px-3 py-1 border rounded hover:bg-white"
-                  >
-                    Próximo →
-                  </button>
+                <div className="flex flex-col items-center">
+                  <p className="text-center">Versículo</p>
+
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={gotoPrev}
+                      className="px-3 py-1 border rounded hover:bg-white"
+                    >
+                      ← Anterior
+                    </button>
+
+                    <button
+                      onClick={gotoNext}
+                      className="px-3 py-1 border rounded hover:bg-white"
+                    >
+                      Próximo →
+                    </button>
+                  </div>
                 </div>
+
               </div>
 
               {/* aqui também coloquei uma barra de busca dentro do fluxo do conteúdo
@@ -620,7 +670,8 @@ export default function Home() {
                           onClick={() => setSelectedVerse(verseNumber)}
                         >
                           <span className="font-semibold mr-2">{verseNumber}.</span>
-                          <span>{v}</span>
+                          {/* aplica font-size 1.3em quando ativo */}
+                          <span style={isActive ? { fontSize: "1.3em" } : undefined}>{v}</span>
                         </li>
                       );
                     })}
@@ -648,7 +699,9 @@ export default function Home() {
                               ? `${verseNumber}.`
                               : `${item.book} ${item.c}:${verseNumber}`}
                           </span>
-                          <span>{highlight(item.v, appliedSearch)}</span>
+                          <span style={isActive ? { fontSize: "1.3em" } : undefined}>
+                            {highlight(item.v, appliedSearch)}
+                          </span>
                         </li>
                       );
                     })}
