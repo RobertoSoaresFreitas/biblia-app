@@ -554,12 +554,7 @@ export default function Home() {
 
                   
 
-                  <button
-                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    className="text-sm px-3 py-1 mt-2 border rounded hover:bg-white"
-                  >
-                    ↑ topo
-                  </button>
+                  
 
                 </div>
 
@@ -580,12 +575,12 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="flex flex-row items-center gap-3 mt-2 ">
+                <div className="flex flex-row itens-center gap-3 mt-2 ">
 
                   <select
                     value={searchScope}
                     onChange={(e) => setSearchScope(e.target.value)}
-                    className="px-3 py-2 border rounded bg-white"
+                    className="text-sm px-3 py-2 border rounded bg-white"
                   >
                     <option value="chapter">Capítulo</option>
                     <option value="book">Livro</option>
@@ -594,16 +589,23 @@ export default function Home() {
 
                   <button
                     onClick={handleSearchApply}
-                    className="px-3 py-1.5 border rounded bg-white"
+                    className="text-sm px-3 py-2 border rounded bg-white"
                   >
                     Pesquisar
                   </button>
 
                   <button
                     onClick={handleClear}
-                    className="px-3 py-1.5 border rounded bg-white"
+                    className="text-sm px-3 py-2 border rounded bg-white"
                   >
                     Limpar
+                  </button>
+
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    className="text-sm px-3 py-2 border rounded bg-white"
+                  >
+                    ↑ topo
                   </button>
 
                 </div>
