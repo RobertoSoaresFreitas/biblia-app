@@ -455,7 +455,7 @@ export default function Home() {
 
                 <input
                   type="text"
-                  placeholder="Pesquisar (ignora acentos)..."
+                  placeholder="Pesquisar..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -528,29 +528,35 @@ export default function Home() {
 
                 {/* navegação mobile */}
 
+                
+
                 <div className="flex flex-row gap-4 m-2 items-center justify-center">
-                  <p className="text-center">Versículo {'👉'}</p>
+
+                  
+                  <p className="text-sm text-center">Versículo {'👉'}</p>
 
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={gotoPrev}
-                      className="px-3 py-1 border rounded hover:bg-white"
+                      className="text-sm px-3 py-1 border rounded hover:bg-white"
                     >
                       ← Anterior
                     </button>
 
                     <button
                       onClick={gotoNext}
-                      className="px-3 py-1 border rounded hover:bg-white"
+                      className="text-sm px-3 py-1 border rounded hover:bg-white"
                     >
                       Próximo →
                     </button>
 
                   </div>
 
+                  
+
                   <button
                     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                    className="px-3 py-1 mt-2 border rounded hover:bg-white"
+                    className="text-sm px-3 py-1 mt-2 border rounded hover:bg-white"
                   >
                     ↑ topo
                   </button>
