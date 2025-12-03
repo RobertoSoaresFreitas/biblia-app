@@ -528,27 +528,27 @@ export default function Home() {
 
                 {/* navegação mobile */}
 
-                  <div className="flex flex-row items-center justify-center gap-2 mt-2 text-1xl">
-                    <p>Versículo {'👉'}</p>
+                <div className="flex flex-row items-center justify-center gap-2 mt-2 text-1xl">
+                  <p>Versículo {'👉'}</p>
 
 
-                    <button
-                      onClick={gotoPrev}
-                      className="text-sm px-3 py-2 border rounded hover:bg-white"
-                    >
-                      ← Anterior
-                    </button>
+                  <button
+                    onClick={gotoPrev}
+                    className="text-sm px-3 py-2 border rounded hover:bg-white"
+                  >
+                    ← Anterior
+                  </button>
 
-                    <button
-                      onClick={gotoNext}
-                      className="text-sm px-3 py-2 border rounded hover:bg-white"
-                    >
-                      Próximo →
-                    </button>
+                  <button
+                    onClick={gotoNext}
+                    className="text-sm px-3 py-2 border rounded hover:bg-white"
+                  >
+                    Próximo →
+                  </button>
 
-                  </div>
+                </div>
 
-               
+
 
               </div>
 
@@ -604,7 +604,6 @@ export default function Home() {
 
               </div>
 
-
             </div>
 
           </>
@@ -621,7 +620,7 @@ export default function Home() {
 
           {selectedBook && selectedChapter && (
             <div>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <div>
                   <h2 className="text-2xl font-bold">
                     {selectedBook.name} {selectedChapter}:{selectedVerse}
@@ -654,21 +653,24 @@ export default function Home() {
 
               {/* aqui também coloquei uma barra de busca dentro do fluxo do conteúdo
                   para que a busca fique disponível no desktop mesmo quando showBox === false */}
-              <div className="mb-4 flex gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="Pesquisar (ignora acentos)..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
-                />
+
+              <input
+                type="text"
+                placeholder="Pesquisar..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
+              />
+
+              <div className="flex flex-row items-center justify-center gap-3 m-2">
+
 
                 {/* <-- SELETOR DE ESCOPO ADICIONADO AQUI PARA DESKTOP */}
                 <select
                   value={searchScope}
                   onChange={(e) => setSearchScope(e.target.value)}
-                  className="px-2 py-2 border rounded text-sm bg-white"
+                  className="px-3 py-2.5 border rounded bg-white"
                 >
                   <option value="chapter">Capítulo</option>
                   <option value="book">Livro</option>
