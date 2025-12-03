@@ -528,14 +528,10 @@ export default function Home() {
 
                 {/* navegação mobile */}
 
+                  <div className="flex flex-row items-center justify-center gap-2 mt-2 text-1xl">
+                    <p>Versículo {'👉'}</p>
 
 
-                <div className="flex flex-row gap-4 m-2 items-center justify-center">
-
-
-                  <p className="text-sm text-center">Versículo {'👉'}</p>
-
-                  <div className="flex gap-3 mt-2">
                     <button
                       onClick={gotoPrev}
                       className="text-sm px-3 py-2 border rounded hover:bg-white"
@@ -552,12 +548,12 @@ export default function Home() {
 
                   </div>
 
-                </div>
+               
 
               </div>
 
               {/* busca mobile (versão compacta) */}
-              <div className="max-w-3xl mx-auto items-center">
+              <div className="max-w-3xl mx-auto items-center justify-center">
 
                 <div className="flex gap-2">
 
@@ -567,11 +563,11 @@ export default function Home() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-90 px-3 py-2 mt-2 border rounded text-sm"
+                    className="w-full px-3 py-2 mt-2 border rounded text-sm"
                   />
                 </div>
 
-                <div className="flex flex-row itens-center gap-3 mt-2 ">
+                <div className="flex flex-row items-center justify-center gap-3 mt-2 ">
 
                   <select
                     value={searchScope}
