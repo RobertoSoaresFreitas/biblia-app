@@ -528,33 +528,29 @@ export default function Home() {
 
                 {/* navegação mobile */}
 
-                
+
 
                 <div className="flex flex-row gap-4 m-2 items-center justify-center">
 
-                  
+
                   <p className="text-sm text-center">Versículo {'👉'}</p>
 
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-3 mt-2">
                     <button
                       onClick={gotoPrev}
-                      className="text-sm px-3 py-1 border rounded hover:bg-white"
+                      className="text-sm px-3 py-2 border rounded hover:bg-white"
                     >
                       ← Anterior
                     </button>
 
                     <button
                       onClick={gotoNext}
-                      className="text-sm px-3 py-1 border rounded hover:bg-white"
+                      className="text-sm px-3 py-2 border rounded hover:bg-white"
                     >
                       Próximo →
                     </button>
 
                   </div>
-
-                  
-
-                  
 
                 </div>
 
@@ -571,7 +567,7 @@ export default function Home() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="w-full px-3 py-2 mt-2 border rounded text-sm"
+                    className="w-90 px-3 py-2 mt-2 border rounded text-sm"
                   />
                 </div>
 
